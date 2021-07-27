@@ -1,0 +1,735 @@
+---
+title: "Food Consumption In Indonesia"
+author: "Atakan Düzgün"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+
+
+<h2>  <p style="color:red;"> In this Content, some scientific calculations are made on R Language. </p>  </h2>
+
+<h2>  <p style="color:red;"> These:  </p>  </h2>
+<h2>  <p style="color:red;">  One Way Anova  </p>  </h2>
+<h2>  <p style="color:red;">  Two Way Anova </p>  </h2>
+<h2>  <p style="color:red;">  Fisher LSD Test </p>  </h2>
+<h2>  <p style="color:red;">  Checking the Normality Assumption  </p>  </h2>
+<h2>  <p style="color:red;">  Tests For The Homogeneity Of Variances  </p>  </h2>
+<h2>  <p style="color:red;">  Root Transformation  </p>  </h2>
+<h2>  <p style="color:red;">  Yeo-Johnson Transformation  </p>  </h2>
+
+<br>
+<br>
+<br>
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(MASS)
+library(car)
+library(cellWise)
+library(nortest)
+library(ggplot2)
+library(multcomp)
+library(agricolae)
+
+# some are not used
+```
+
+
+
+
+
+<h1>  <p style="color:red;"> Data on the Cultural Dimension of Urban Community Food Consumption in Indonesia </p>  </h1>
+
+<br>
+
+#### source : https://www.kaggle.com/saurabhshahane/food-consumption-in-indonesia?select=+DATASET+cultural+dimension+of+food+consumption.xlsx
+
+```{r}
+df_all <- read_xlsx("DATASET_cultural dimension of food consumption.xlsx")
+```
+
+
+<h1>  <p style="color:red;"> Summary of data </p>  </h1>
+
+
+   This dataset shows survey data on the characteristics of the cultural dimension of food consumption patterns in urban communities in Indonesia. The cultural dimension discussed in this article includes the cultural value and cultural practice sub-dimensions. Data is enriched by illustrating the cultural characteristics of urban people's food consumption patterns based on social class categories. Data collection was conducted in five major cities of Indonesia with face-to-face interviews with 710 respondents obtained using a stratified random sampling technique. 
+
+ <br>
+
+   The results of data show that the cultural dimension is quite dominant in influencing the pattern of food consumption of urban communities in Indonesia compared to the economic and health dimensions. Even though conceptually the value and practice sub-dimensions are integrally related, the cultural dimension of food consumption patterns in urban communities are still more dominated by the value sub-dimension. In the food consumption pattern, the urban upper classes are more dominantly influenced by economic dimensions and modern healthy lifestyles than cultural dimensions.
+
+
+ <br>
+
+```{r}
+summary(df_all)
+```
+
+ <br>
+
+#### There are 28 variables, each consisting of 710 observations.
+
+ <br>
+
+
+
+```{r}
+df <- df_all[,c("(B10) SOCIAL CLAS","(C15) % MONTHLY EXPENDITURE FOR FOOD","(B7) EDUCATION LEVEL",
+                "(B9) OCCUPATION","(A2) PROVINCE","(B3) GENDER","(B4) AGE")]
+```
+
+ <br>
+
+#### I collected the variables we were interested in in the "df" data, eliminated the other variables
+
+ <br>
+ 
+ <br>
+
+```{r}
+# factor assignments
+
+df$`(A2) PROVINCE` <- as.factor(df$`(A2) PROVINCE`)
+df$`(B7) EDUCATION LEVEL` <- as.factor(df$`(B7) EDUCATION LEVEL`)
+df$`(B9) OCCUPATION` <- as.factor(df$`(B9) OCCUPATION`)
+df$`(B10) SOCIAL CLAS` <- as.factor(df$`(B10) SOCIAL CLAS`)
+df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`<- as.integer(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`)
+df$`(B3) GENDER` <- as.factor(df$`(B3) GENDER`)
+```
+ 
+ <br>
+
+#### Some of its variables were in the wrong class category, I changed the class of the variables to "factor" to continue my analysis.
+
+ <br>
+
+```{r}
+levels(df$`(B10) SOCIAL CLAS`)
+levels(df$`(B7) EDUCATION LEVEL`)
+levels(df$`(B9) OCCUPATION`)
+levels(df$`(A2) PROVINCE`)
+levels(df$`(B3) GENDER`)
+```
+
+ <br>
+
+#### The amount of Na in the data is checked
+
+ <br>
+
+```{r}
+sum(is.na(df$`(B10) SOCIAL CLAS`))
+sum(is.na(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`))
+sum(is.na(df$`(B7) EDUCATION LEVEL`))
+sum(is.na(df$`(B9) OCCUPATION`))
+sum(is.na(df$`(A2) PROVINCE`))
+sum(is.na(df$`(B3) GENDER`))
+sum(is.na(df$`(B4) AGE`))
+
+```
+
+ <br>
+
+#### There is no Na observation in the data.
+
+ <br>
+
+ <br>
+ 
+  <br>
+  
+  
+#### Summary of df  
+
+ <br>
+  
+```{r}
+summary(df)
+
+```
+
+ <br>
+
+ <br>
+ 
+ 
+#### Boxplot graph visualizing the distribution of the "Social Class" variable chosen as the main factor over the "% Monthly Expenditure For Food" variable
+
+```{r echo=FALSE, warning=FALSE}
+
+ggplot(df, aes(x=df$`(B10) SOCIAL CLAS`, y=df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`)) +
+labs(title="",x="Scial Class", y = "Monthly Expenditure For Food")+ geom_boxplot()+ geom_point()
+```
+
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ 
+<h1>  <p style="color:red;"> One Way Anova  </p>  </h1>
+
+ 
+ <br>
+ <br> 
+
+```{r}
+df_anova <-  aov(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD` ~ df$`(B10) SOCIAL CLAS`, data = df)
+df_anova
+```
+
+ <br>
+  <br>
+
+
+#### Obtained coefficients
+
+
+
+```{r}
+coef(df_anova)
+```
+
+ <br>
+  <br>
+
+#### The resulting value (Intercept) = 59.69 belongs to the "Lower Class" group selected for the reference group. According to these results;
+
+ <br>
+
+#### Lower Class = $\mu_1$ = 59.69 
+
+ <br>
+
+#### Middle Class = $\mu_2$ = -19.28+59.69 = 40.41 
+
+ <br>
+
+#### Upper Class = $\mu_3$ = -33.26+59.69 = 26.43
+
+
+ <br>
+ <br>
+ 
+
+#### According to these results, "Lower Class" allocates an average of 59% of one's money to food expenses. This value is 40% in "Middle Class" and 26.46% for a person in "Upper Class".
+
+ <br>
+  <br>
+  
+
+
+```{r}
+summary(df_anova)
+```
+
+ <br>
+  <br>
+   <br>
+   
+   
+#### Our hypotheses for one-way ANOVA are:
+
+ <br>
+
+### $H_0 : \mu_1 = \mu_2 = \mu_3$
+
+ <br>
+
+### $H_1$ : For at least one (i,j) $\mu_i \neq  \mu_j$ 
+
+ <br>
+
+#### Since the p value is < $\alpha(0.05)$ the $H_0$ hypothesis is rejected. At least one group mean is different from the mean of other groups.
+
+ <br>
+
+#### For this reason, it can be said that there is a connection between the social class of people in Indonesia and their % monthly food expenditure..
+
+ <br>
+ <br>
+ <br>
+ <br> 
+ <br>
+ <br>
+ <br>
+ <br>
+ 
+<h1>  <p style="color:red;">  Two Way Anova </p>  </h1>
+
+
+ <br>
+ <br>
+
+ 
+ 
+#### Here, the "OCCUPATION" variable is taken as the main factor and the "SOCIAL CLASS" variable is used as the block factor.
+
+ <br>
+
+```{r}
+
+df_anova_occupation <-  aov(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD` ~ df$`(B9) OCCUPATION`, data = df)
+df_anova_occupation
+
+
+coef(df_anova_occupation)
+
+# Enterpreneur = 41.49 
+# Government Employees = 43.03
+# Independent Worker = 37.33
+# Police Officer<U+200E>/Army = 47.05
+# Private Employees = 43.27
+# Teacher<U+200E>/Lecturer = 44.09
+ 
+
+
+summary(df_anova_occupation)
+
+
+```
+
+ <br>
+
+
+#### As can be seen, there is a significant difference between the % food expenditures of people working in different occupational groups.
+
+ <br>
+
+### p value 0.017 < 0.05
+ 
+ <br>
+ <br>
+ <br>
+ 
+
+### Here, the "OCCUPATION" variable is taken as the main factor and the "SOCIAL CLASS" variable is used as the block factor.
+
+ <br>
+ <br>
+ 
+ 
+
+```{r}
+df_anova_blockfactor <-  aov(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD` ~ df$`(B10) SOCIAL CLAS`+
+                                  df$`(B9) OCCUPATION`, data = df)
+
+summary(df_anova_blockfactor)
+
+
+```
+
+ <br>
+
+#### Our hypotheses
+ <br>
+
+### $H_0$ : $\mu_1$ = $\mu_2$ =... = $\mu_i$  
+
+ <br>
+
+### And $H_0$ hypoethism for blocks
+
+ <br>
+
+### $H_0 : \beta_1 = \beta_2$ = ... = $\beta_i$
+
+ <br>
+
+
+
+### From the results 
+
+ <br>
+
+#### 1. Since the p value for the "Social Class" factor is 2e-16 = < 0.05 $H_0$ : $\mu_1$ = $\mu_2$ = ... = $\mu_i$   hypothesis is strongly rejected. Social class certainly has an impact on the % monthly food expenditure.
+
+ <br>
+
+#### 2. Since the p value = 0.6614 > 0.05 for the "Occopation" factor, the hypothesis  $H_0$ : $\beta_1$ = $\beta_2$ = ... = $\beta_i$ is accepted.
+
+ <br>
+
+#### After the random blocking process, it is seen that the "Occupation" variable, that is, the occupational groups, in which the average monthly income expenditure percentage is looked at first and has a significant difference between these averages, does not have a significant value in the model obtained by the factorization method. 
+
+ <br>
+ <br>
+
+
+  
+  
+### for df_anova $\hat{\sigma}^2$ = MSE = 112 
+
+ <br>
+
+### for df_anova_occupation $\hat{\sigma}^2$ = MSE = 287.4
+
+ <br>
+
+### for df_anova_rastgelefaktor $\hat{\sigma}^2$ = MSE = 112
+
+ <br>
+
+
+#### Based on this information, we can say that the mean of errors neither increased nor decreased. We cannot say that more accurate results are obtained in the model created with blocking. Blocking in this way is not preferred, but it is okay.
+
+
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+
+
+
+
+
+
+
+
+
+
+
+
+<h1>  <p style="color:red;">  Fisher LSD Test </p>  </h1>
+
+ <br>
+ <br>
+
+#### our hypotheses for pairwise comparison
+
+ <br>
+
+### $H_0$ : $\mu_1 - \mu_2$ = 0
+ <br>
+
+and
+
+ <br>
+
+### $H_1$ : $\mu_1 - \mu_2$ $\neq$ 0
+
+ <br>
+
+
+```{r}
+
+lsd_out<-LSD.test(df_anova,"df$`(B10) SOCIAL CLAS`",group=TRUE)
+lsd_out
+
+```
+
+ <br>
+ 
+#### From the results obtained, it is seen that "Lower Class", "Middle Class" and "Upper Class" are separated into groups on their own ("a","b","c"). That meaning all different from each other
+
+ <br>
+ 
+and
+
+ <br>
+
+#### According to this result, there is a significant difference between the averages of the classes. We reject our hypothesis $H_0$.
+
+
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+
+
+
+
+
+
+<h1>  <p style="color:red;"> Checking the Normality Assumption </p>  </h1>
+
+<br>
+
+```{r}
+qqnorm(resid(df_anova), main = "Normal Q-Q Plot", col = "red")
+qqline(resid(df_anova), col = "blue", lwd = 2)
+
+
+```
+
+<br>
+
+#### As seen in the graph, normality is not achieved.
+
+
+
+
+<br>
+<br>
+
+```{r}
+shapiro.test(residuals(df_anova))
+```
+
+<br>
+
+#### As a result of the Shapiro-Wilk normality test, our p value was found to be much smaller than 0.05. According to this result, we see that normality is not provided.
+
+<br>
+
+
+```{r}
+ks.test(df_anova$residuals,"pnorm",mean=mean(df_anova$residuals),sd=sd(df_anova$residuals))
+
+```
+
+<br>
+
+#### As seen in the test results, it does not meet the normality assumption. The residuals do not have a normal distribution.
+
+<br>
+<br>
+<br>
+<br>
+
+<h1>  <p style="color:red;"> Tests For The Homogeneity Of Variances </p>  </h1>
+
+
+
+### Our assumption:
+
+<br>
+
+### $H_0 : \sigma_1^2 = \sigma_2^2 = \sigma_3^2$
+
+<br>
+
+### $H_1 : \sigma_i^2 \neq \sigma_j^2$
+
+<br>
+
+#### In statistics, Levene's test is an inferential statistic used to assess the equality of variances for a variable calculated for two or more groups.
+
+<br>
+
+#### Levene's test is used to check that variances are equal for all samples when your data comes from a non normal distribution.
+
+<br>
+<br>
+
+```{r}
+
+leveneTest(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`~ df$`(B10) SOCIAL CLAS`, data=df )
+
+
+```
+
+<br>
+<br>
+
+#### Since we could not provide the assumption of normality in our data, I do not rely on the Levene test and look at the Bartlett test result.
+
+<br>
+<br>
+
+```{r}
+bartlett.test(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`~ df$`(B10) SOCIAL CLAS`, data=df )
+
+```
+
+<br>
+
+#### If we interpret the results of the two tests, we obtain that the homogeneity of the variances is not provided in our data.
+
+<br>
+<br>
+<br>
+
+
+
+```{r}
+
+plot(df_anova,1)
+
+# No homogeneity of variances, no fixed variance
+
+```
+<br>
+<br>
+<br>
+
+<h1>  <p style="color:red;"> Root Transformation </p>  </h1>
+
+<br>
+
+#### I apply the root transformation technique to the data that does not provide the assumption of normality to provide the assumption.
+
+<br>
+
+```{r}
+df_root <- transform(df, root_count = sqrt(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`))
+
+df_root_anova <- aov(df_root$root_count ~ df_root$X.B10..SOCIAL.CLAS , data = df_root)
+
+
+
+```
+
+
+<br>
+
+#### Anova model after transformation
+
+
+```{r}
+
+summary(df_root_anova)
+
+```
+
+<br>
+
+#### It is seen that the one-way anova model established after applying the root transformation is significant. (p < 0.05)
+
+<br>
+
+
+
+```{r}
+# This is done by assuming that the residuals of the transformed model are normally distributed.
+
+shapiro.test(df_root_anova$residuals)
+```
+
+<br>
+<br>
+
+#### After root transformation, it is seen that the residues do not have a normal distribution according to the shapiro-wilk test.
+
+<br>
+
+```{r echo=FALSE}
+qqnorm(resid(df_root_anova), main = "Normal Q-Q Plot", col = "red")
+qqline(resid(df_root_anova), col = "gray", lwd = 2)
+```
+
+
+### It is clearly seen in the graph created from the distributions of the residuals that the residuals do not have a normal distribution. 
+
+<br>
+
+### From all the resulting data we conclude that the residuals do not fit the normal distribution.
+
+<br>
+
+### $H_0$ is rejected
+
+<br>
+
+<h1>  <p style="color:red;"> Yeo-Johnson Transformation </p>  </h1>
+
+<br>
+
+### this function converts Box-Cox or Yeo-Johnson to each variable in a dataset
+uses a re-weighted maximum likelihood (if robust = True) to fit solidly.
+
+<br>
+
+### if robust = False it uses nroaml ML method
+
+<br>
+
+```{r}
+
+
+
+transfo_df <- transfo(df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`, type = "YJ", robust = FALSE)
+
+
+
+lambda <- transfo_df$lambdahats
+lambda
+
+
+
+df_yj <- transform(df, yj_count = df$`(C15) % MONTHLY EXPENDITURE FOR FOOD`^(lambda))
+head(df_yj,10)
+
+
+```
+<br>
+
+#### our lambda value is 0.6534852
+
+<br>
+<br>
+
+### anova model after yj2 transformation 
+
+<br>
+<br>
+
+```{r}
+df_yj_anova <- aov( df_yj$yj_count ~ df_yj$X.B10..SOCIAL.CLAS, data = df_yj )
+summary(df_yj_anova)
+ 
+
+
+```
+
+<br>
+
+If we interpret the result, $H_0$ is rejected in the anova model after the Transformation.
+
+<br>
+
+### Normality tests after transformation
+
+<br>
+
+```{r}
+shapiro.test(df_yj_anova$residuals)
+
+lillie.test(df_yj_anova$residuals)
+
+
+```
+
+<br>
+
+#### According to the results obtained, it is seen that the residues are not normally distributed after the YJ change.
+
+
+### Homogeneity of variances
+```{r}
+bartlett.test(df_yj$yj_count ~ df_yj$X.B10..SOCIAL.CLAS, data = df_yj )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
